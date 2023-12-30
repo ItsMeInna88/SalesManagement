@@ -1,0 +1,139 @@
+﻿@page "/WindowEdit/{id:int}"
+
+@using SalesManagement.Shared.DTO;
+@using System.Text.Json;
+@using System.Text;
+@inject HttpClient httpClient;
+@inject NavigationManager navigationManager;
+
+<h3>Edit Window</h3>
+<h5 style="color:red">@error</h5>
+@if (SelectedWindow != null)
+{
+    <div>
+        <div class="form-group">
+            <label>Name:</label>
+            <input type="text" @bind="SelectedWindow.Name" />
+        </div>
+        <div class="form-group">
+            <label>Quantity:</label>
+            <input type="number" @bind="SelectedWindow.QuantityOfWindow" />
+        </div>
+        <div class="form-group">
+            <label>TotalSubElement:</label>
+            <input type="number" @bind="SelectedWindow.TotalSubElement" readonly />
+        </div>
+        <div class="form-group">
+
+            @if (order != null)
+            {
+                @if (order.Select(x => x.windows).Count() != 0)
+                {
+                    <label>Order:</label>
+                    <select @bind="SelectedWindow.OrderId">
+                        @foreach (var window in order)
+                        {
+                            <option value="@window.OrderId">@window.Name</option>
+                        }
+                    </select>
+                }
+            }
+        </div>
+
+        <div class="form-group">
+            <button class="btn btn-primary" @onclick="()=>SaveWindow(SelectedWindow)">Save Window</button>
+            <button class="btn btn-danger" @onclick="()=>DeleteWindow(SelectedWindow.WindowId)">Delete</button>
+        </div>
+
+    </div>
+
+}
+else
+{
+    <p>No window selected.</p>
+}
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+    public WindowDTO SelectedWindow;
+    public List<OrderDTO> order;
+    public string error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SelectedWindow = (id == 0) ? new WindowDTO() : await httpClient.GetFromJsonAsync<WindowDTO>($"api/Window/{id}");
+        order = await httpClient.GetFromJsonAsync<List<OrderDTO>>($"api/orders");
+        error = "";
+    }
+
+    void SaveWindow(WindowDTO window)
+    {
+        if (window.WindowId != 0)
+            if (window.WindowId != 0)
+            {
+                UpdateWindow(window);
+            }
+            else
+            {
+                AddWindow(window);
+            }
+
+    }
+
+    private async Task AddWindow(WindowDTO window)
+    {
+        HttpResponseMessage response = await httpClient.PostAsJsonAsync("api/Window", window);
+        if (response.IsSuccessStatusCode)
+        {
+            navigationManager.NavigateTo($"/windowslist");
+        }
+        else
+        {
+            error = $"Failed to create Window. Status code: {response.Content.ReadAsStringAsync()}";
+        }
+       
+    }
+
+    private async Task UpdateWindow(WindowDTO window)
+    {
+        var content = new StringContent(System.Text.Json.JsonSerializer.Serialize(window), System.Text.Encoding.UTF8, "application/json");
+        var response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Put, $"api/Window/{window.WindowId}")
+            {
+                Content = content
+            });
+        if (response.IsSuccessStatusCode)
+        {
+            navigationManager.NavigateTo($"/windowslist");
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+
+            error = "Window not found.";
+        }
+        else
+        {
+            error = $"Failed to update Window. Status code: {response.Content.ReadAsStringAsync()}";
+        }
+
+    }
+
+    private async Task DeleteWindow(int id)
+    {
+        HttpResponseMessage response = await httpClient.DeleteAsync($"api/Window/{id}");
+        if (response.IsSuccessStatusCode)
+        {
+            navigationManager.NavigateTo($"/windowslist");
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+
+            error = "Window not found.";
+        }
+        else
+        {
+            error = $"Failed to delete Window. Status code: {response.Content}";
+        }
+    }
+
+}

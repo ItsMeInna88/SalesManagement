@@ -1,0 +1,126 @@
+﻿@page "/EditOrder/{orderId:int}"
+
+@using SalesManagement.Shared.DTO;
+@using SalesManagement.Shared.Models;
+@using System.Text.Json;
+@using System.Text;
+@inject HttpClient httpClient;
+@inject NavigationManager navigationManager;
+
+<h3>EditOrder</h3>
+<h5 style="color:red">@error</h5>
+
+@if (order != null)
+{
+    <div>
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input id="name" class="form-control" @bind="order.Name" />
+    </div>
+    <div class="form-group">
+        <label for="state">State</label>
+        <input id="state" class="form-control" @bind="order.State" />
+    </div>
+    <button class="btn btn-primary" @onclick="()=>SaveOrder(order)">Save</button>
+    <button class="btn btn-danger" @onclick="()=>DeleteOrder(order.OrderId)">Delete</button>
+    </div>
+}
+else
+{
+    <p>Order not found.</p>
+}
+@code {
+    [Parameter]
+    public int orderId { get; set; }
+    private OrderDTO order;
+    public string error;
+   
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (orderId == 0)
+        {
+            order = new OrderDTO();
+        }
+        else
+        {
+            order = await httpClient.GetFromJsonAsync<OrderDTO>($"api/orders/{orderId}");
+        }
+        error = "";
+    }
+    void SaveOrder(OrderDTO order)
+    {
+        if (order.OrderId != 0)
+        {
+            UpdateOrder(order);
+        }
+        else
+        {
+            AddOrder(order);
+        }
+
+    }
+    private async Task AddOrder(OrderDTO order)
+    {
+        try
+        {
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync("api/Orders", order);
+            if (response.IsSuccessStatusCode)
+            {
+                navigationManager.NavigateTo($"/");
+            }
+            else
+            {
+                error= await response.Content.ReadAsStringAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            var a = ex.Message;
+        }
+
+    }
+    private async Task UpdateOrder(OrderDTO updatedOrder)
+    {
+        try
+        {
+            HttpResponseMessage response = await httpClient.PutAsJsonAsync("api/orders", updatedOrder);
+            if (response.IsSuccessStatusCode)
+            {
+                navigationManager.NavigateTo($"/");
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+
+                error = "Order not found.";
+            }
+            else
+            {
+                error=$"Failed to update order. Status code: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+    private async Task DeleteOrder(int id)
+    {
+       
+        HttpResponseMessage response = await httpClient.DeleteAsync($"api/orders/{id}");
+        if (response.IsSuccessStatusCode)
+        {
+            navigationManager.NavigateTo($"/");
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+
+            error = "Order not found.";
+        }
+        else
+        {
+           error=$"Failed to delete order. Status code: {response.Content.ReadAsStringAsync()}";
+        }
+    }
+}
+

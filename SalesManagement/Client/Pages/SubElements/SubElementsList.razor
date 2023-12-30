@@ -1,0 +1,72 @@
+﻿@page "/SubElementlist"
+
+@using SalesManagement.Shared.DTO;
+@using System.Text.Json;
+@using System.Text;
+
+@inject HttpClient httpClient;
+@inject NavigationManager navigationManager;
+
+<h3>SubElements List</h3>
+
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Element</th>
+            <th>Width</th>
+            <th>Height</th>
+            <th><button class="btn btn-primary" @onclick="()=>CreateSubElement()">Create New</button></th>
+        </tr>
+    </thead>
+    @if (SubElements != null && SubElements.Any())
+    {
+        @foreach (var subElement in SubElements)
+        {
+            <tbody>
+
+                <tr @onclick="(() => EditSubElement(subElement.SubElementId))">
+                    <td>@subElement.Type</td>
+                    <td>@subElement.Element</td>
+                    <td>@subElement.Width</td>
+                    <td>@subElement.Height</td>
+                    @if (subElement.WindowId != null)
+                    {
+                        <td><button class="btn btn-secondary" @onclick="()=>GoToWindow(subElement.WindowId)">Go To Window</button></td>
+                    }
+                </tr>
+            </tbody>
+        }
+
+    }
+    else
+    {
+        <p>No sub-elements available.</p>
+    }
+</table>
+
+
+@code {
+    List<SubElementDTO> SubElements { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        SubElements = await httpClient.GetFromJsonAsync<List<SubElementDTO>>($"api/SubElement");
+    }
+
+    void EditSubElement(int id)
+    {
+        navigationManager.NavigateTo($"/SubElementEdit/{id}");
+    }
+
+    void CreateSubElement()
+    {
+        navigationManager.NavigateTo($"/SubElementEdit/{0}");
+    }
+
+    void GoToWindow(int id)
+    {
+        navigationManager.NavigateTo($"/WindowEdit/{id}");
+    }
+}

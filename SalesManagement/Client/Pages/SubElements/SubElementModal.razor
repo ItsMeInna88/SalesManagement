@@ -1,0 +1,60 @@
+﻿@page "/SubElementModal/{id:int}"
+
+@using SalesManagement.Shared.DTO;
+@using System.Text.Json;
+@using System.Text;
+@inject HttpClient httpClient;
+@inject NavigationManager navigationManager;
+
+<h3>Create SubElement for Window : @window.Name </h3>
+<h5 style="color:red">@error</h5>
+<div>
+    <div class="form-group">
+        <label>Type:</label>
+        <input type="text" @bind="subElement.Type" />
+    </div>
+    <div class="form-group">
+        <label>Element:</label>
+        <input type="number" @bind="subElement.Element" />
+    </div>
+    <div class="form-group">
+        <label>Height:</label>
+        <input type="number" @bind="subElement.Height" />
+    </div>
+    <div class="form-group">
+        <label>Width</label>
+        <input type="number" @bind="subElement.Width" />
+    </div>
+    <button class="btn btn-primary" @onclick="()=>AddSubElement(subElement)">Save Window</button>
+</div>
+
+@code {
+
+    [Parameter]
+    public int id { get; set; }
+    public SubElementDTO subElement;
+    public WindowDTO window;
+    public string error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        subElement = new SubElementDTO();
+        window = new WindowDTO();
+        error = "";
+        if (id != 0) { window = await httpClient.GetFromJsonAsync<WindowDTO>($"api/Window/{id}"); }
+    }
+
+    private async Task AddSubElement(SubElementDTO subEl)
+    {
+        subEl.WindowId = id;
+        HttpResponseMessage response = await httpClient.PostAsJsonAsync("api/SubElement", subEl);
+        if (response.IsSuccessStatusCode)
+        {
+            navigationManager.NavigateTo($"/windowslist", forceLoad: true);
+        }
+        else
+        {
+            error = $"Failed to create SubElement. Status code: {response.Content.ReadAsStringAsync()}";
+        }
+    }
+}

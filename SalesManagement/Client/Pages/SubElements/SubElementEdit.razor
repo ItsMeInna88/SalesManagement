@@ -1,0 +1,139 @@
+﻿@page "/SubElementEdit/{subElementId:int}"
+@using SalesManagement.Shared.DTO;
+@using System.Text.Json;
+@using System.Text;
+@inject HttpClient httpClient;
+@inject NavigationManager navigationManager;
+
+<h3>SubElementEdit</h3>
+<h5 style="color:red">@error</h5>
+@if (subElement != null)
+{
+    <div>
+        <div class="form-group">
+            <label>Type:</label>
+            <input type="text" @bind="subElement.Type" />
+        </div>
+        <div class="form-group">
+            <label>Element:</label>
+            <input type="number" @bind="subElement.Element" />
+        </div>
+        <div class="form-group">
+            <label>Width:</label>
+            <input type="number" @bind="subElement.Width" />
+        </div>
+        <div class="form-group">
+            <label>Height:</label>
+            <input type="number" @bind="subElement.Height" />
+        </div>
+        <input hidden @bind="subElement.WindowId">
+        <div class="form-group">
+            @if (window != null)
+            {
+                @if (window.Select(x => x.subelements).Count() != 0)
+                {
+                    <label>Window:</label>
+                    <select @bind="subElement.WindowId">
+                        @foreach (var window in window)
+                        {
+                            <option value="@window.WindowId">@window.Name</option>
+                        }
+                    </select>
+                }
+            }
+        </div>
+        <div class="form-group">
+            <button class="btn btn-primary" @onclick="()=>SaveSubElement(subElement)">Save</button>
+            <button class="btn btn-danger" @onclick="()=>DeleteSubElement(subElement.SubElementId)">Delete</button>
+        </div>
+    </div>
+}
+else
+{
+    <p>No sub-element selected.</p>
+}
+
+
+@code {
+
+    [Parameter]
+    public int subElementId { get; set; }
+    private SubElementDTO subElement;
+    private List<WindowDTO> window;
+    public string error;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        subElement = (subElementId == 0) ? new SubElementDTO() : await httpClient.GetFromJsonAsync<SubElementDTO>($"api/SubElement/{subElementId}");
+        window = await httpClient.GetFromJsonAsync<List<WindowDTO>>($"api/window");
+        error = "";
+    }
+
+    void SaveSubElement(SubElementDTO subElement)
+    {
+        if (subElement.SubElementId != 0)
+        {
+            UpdateSubElement(subElement);
+        }
+        else
+        {
+            AddSubElement(subElement);
+        }
+
+    }
+
+    private async Task AddSubElement(SubElementDTO subElement)
+    {
+        HttpResponseMessage response = await httpClient.PostAsJsonAsync("api/SubElement", subElement);
+        if (response.IsSuccessStatusCode)
+        {
+            navigationManager.NavigateTo($"/SubElementlist");
+        }
+        else
+        {
+            error = $"Failed to create SubElement. Status code: {response.Content.ReadAsStringAsync()}";
+        }
+    }
+
+    private async Task UpdateSubElement(SubElementDTO subElement)
+    {
+        var content = new StringContent(System.Text.Json.JsonSerializer.Serialize(subElement), System.Text.Encoding.UTF8, "application/json");
+        var response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Put, $"api/SubElement/{subElement.SubElementId}")
+            {
+                Content = content
+            });
+        if (response.IsSuccessStatusCode)
+        {
+            navigationManager.NavigateTo($"/SubElementlist");
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+
+            error = "SubElement not found.";
+        }
+        else
+        {
+            error = $"Failed to update SubElement. Status code: {response.StatusCode}";
+        }
+
+    }
+
+    private async Task DeleteSubElement(int id)
+    {
+        HttpResponseMessage response = await httpClient.DeleteAsync($"api/SubElement/{id}");
+        if (response.IsSuccessStatusCode)
+        {
+            navigationManager.NavigateTo($"/SubElementlist");
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+
+            error = "SubElement not found.";
+        }
+        else
+        {
+           error=($"Failed to delete SubElement. Status code: {response.Content.ReadAsStringAsync()}");
+        }
+    }
+}

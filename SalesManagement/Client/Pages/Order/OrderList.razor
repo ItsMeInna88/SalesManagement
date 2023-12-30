@@ -1,0 +1,123 @@
+﻿@page "/"
+@using SalesManagement.Shared.DTO;
+@using System.Text.Json;
+@using System.Text;
+
+@inject HttpClient httpClient;
+@inject NavigationManager navigationManager;
+
+<link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+<link href="css/app.css" rel="stylesheet" />
+<link href="SalesManagement.Client.styles.css" rel="stylesheet" />
+
+<h1>Orders Management</h1>
+
+
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>State</th>
+            <th>Windows</th>
+            <th><button class="btn btn-primary" @onclick="()=>CreateOrder()">Create New</button></th>
+        </tr>
+    </thead>
+    @if (Orders != null && Orders.Any())
+    {
+        @foreach (var order in Orders)
+        {
+            <tbody>
+
+                <tr>
+                    <td>@order.Name</td>
+                    <td>@order.State</td>
+                    <td>
+                        @if (order.windows != null && order.windows.Any())
+                        {
+                            <ol>
+                                @foreach (var window in order.windows)
+                                {
+                                    <li>
+                                        @window.Name - Quantity: @window.QuantityOfWindow - <button class="btn btn-outline-success" @onclick="()=>EditWindow(window)">Window Details</button>
+
+                                    </li>
+                                }
+                            </ol>
+                        }
+                        else
+                        {
+                            <p>No windows associated with this order.</p>
+                        }
+                    </td>
+                    <td><button class="btn btn-outline-warning" @onclick="() => EditOrder(order)">Edit Order</button></td>
+                    <td><button class="btn btn-secondary" @onclick="()=>OpenModal(order.OrderId)">Add Window</button></td>
+                </tr>
+            </tbody>
+        }
+    }
+    else
+    {
+        <p>No orders found.</p>
+    }
+</table>
+
+<!-- #region WindowModal -->
+<div class="modal" tabindex="-1" role="dialog" style="display: @modalDisplay">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" @onclick="CloseModal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <SalesManagement.Client.Pages.Window.WindowModal id="@idOrder" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- #endregion WindowModal -->
+
+
+@code {
+    List<OrderDTO> Orders;
+    public string modalDisplay = "none";
+    public int idOrder;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Orders = await httpClient.GetFromJsonAsync<List<OrderDTO>>($"api/orders");
+        if (modalDisplay == "block") { CloseModal(); }
+    }
+
+    void EditWindow(WindowDTO window)
+    {
+        navigationManager.NavigateTo($"/WindowEdit/{window.WindowId}");
+    }
+
+    void EditOrder(OrderDTO order)
+    {
+        navigationManager.NavigateTo($"/EditOrder/{order.OrderId}");
+    }
+
+    void CreateOrder()
+    {
+        navigationManager.NavigateTo($"/EditOrder/{0}");
+    }
+
+    void OpenModal(int id)
+    {
+        modalDisplay = "block";
+        idOrder = id;
+    }
+
+    void CloseModal()
+    {
+        modalDisplay = "none";
+    }
+
+}

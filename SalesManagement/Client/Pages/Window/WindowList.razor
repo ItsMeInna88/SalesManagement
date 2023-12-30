@@ -1,0 +1,105 @@
+﻿@page "/windowslist"
+
+@using SalesManagement.Shared.DTO;
+@using System.Text.Json;
+@using System.Text;
+
+@inject HttpClient httpClient;
+@inject NavigationManager navigationManager;
+<h3>Windows List</h3>
+
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Quantity</th>
+            <th>Total Sub-Elements</th>
+            <th><button class="btn btn-primary" @onclick="()=>CreateWindow()">Create New</button></th>
+        </tr>
+    </thead>
+
+    @if (Windows != null && Windows.Any())
+    {
+        @foreach (var window in Windows)
+        {
+            <tbody>
+                <tr>
+                    <td>@window.Name</td>
+                    <td>@window.QuantityOfWindow</td>
+                    <td>@window.TotalSubElement</td>
+                    @if (window.OrderId != null)
+                    {
+                        <td><button class="btn btn-outline-danger" @onclick="()=>GoToOrder(window.OrderId)">Go To Order</button></td>
+                    }
+                    <td><button class="btn btn-outline-success" @onclick="()=>OpenModal(window.WindowId)">Add SubElement</button></td>
+                    <td><button class="btn btn-secondary" @onclick="() => EditWindow(window)">Edit Window</button></td>
+                </tr>
+            </tbody>
+        }
+    }
+    else
+    {
+        <p>No windows available.</p>
+    }
+
+</table>
+
+
+<!-- #region SubElementModal -->
+<div class="modal" tabindex="-1" role="dialog" style="display: @modalDisplay">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modal Title</h5>
+                <button type="button" class="close" @onclick="CloseModal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <SalesManagement.Client.Pages.SubElements.SubElementModal id="@idOrder" />
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- #endregion SubElementModal -->
+@code {
+    List<WindowDTO> Windows { get; set; }
+    public string modalDisplay = "none";
+    public int idOrder;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Windows = await httpClient.GetFromJsonAsync<List<WindowDTO>>($"api/window");
+    }
+
+    void EditWindow(WindowDTO window)
+    {
+        navigationManager.NavigateTo($"/WindowEdit/{window.WindowId}");
+    }
+
+    void CreateWindow()
+    {
+        navigationManager.NavigateTo($"/WindowEdit/{0}");
+    }
+
+    void GoToOrder(int id)
+    {
+        navigationManager.NavigateTo($"/EditOrder/{id}");
+    }
+
+    void OpenModal(int id)
+    {
+        modalDisplay = "block";
+        idOrder = id;
+    }
+
+    void CloseModal()
+    {
+        modalDisplay = "none";
+    }
+}
