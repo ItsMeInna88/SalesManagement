@@ -46,7 +46,6 @@ namespace SalesManagement.Server.Services
             if (orderToUpdate == null)
             {
                 return Result<OrderDTO>.Failure("Order not found in the database.");
-
             }
             try
             {
@@ -106,8 +105,7 @@ namespace SalesManagement.Server.Services
             {
                 if (db.Orders.Any(x => x.OrderId == id))
                 {
-                    var orderbyId = db.Orders.Include(x => x.windows).ThenInclude(w => w.subelements).FirstOrDefault(o => o.OrderId == id);
-                    return Result<OrderDTO>.Success(mappers.MapToOrderDTO(orderbyId));
+                    return Result<OrderDTO>.Success(mappers.MapToOrderDTO(db.Orders.Include(x => x.windows).ThenInclude(w => w.subelements).FirstOrDefault(o => o.OrderId == id)));
                 }
                 else
                 {
@@ -118,7 +116,6 @@ namespace SalesManagement.Server.Services
             {
                 return Result<OrderDTO>.Failure($"Error Gettin order: {ex.Message}");
             }
-
         }
         #endregion
     }

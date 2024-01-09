@@ -15,7 +15,6 @@ namespace SalesManagement.Server.Controllers
         {
             _orderRepository = orderRepository;
         }
-
         [HttpGet]
         public async Task<ActionResult<IEnumerable<OrderDTO>>> Get()
         {

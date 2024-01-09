@@ -12,7 +12,6 @@ namespace SalesManagement.Server.MappersDTO
                 OrderId = order.OrderId,
                 Name = order.Name,
                 State = order.State,
-                
                 windows = order.windows?.Select(w => new WindowDTO
                 {
                     WindowId = w.WindowId,
